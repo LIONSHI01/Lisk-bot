@@ -1,7 +1,7 @@
-const { Web3 } = require("web3");
+const Web3 = require("web3");
 const kleur = require("kleur");
-const fetch = require('node-fetch'); 
-const fs = require('fs');
+const fetch = require("node-fetch");
+const fs = require("fs");
 
 // 设置进程标题
 process.title = "Lisk自动签到--ferdie_jhovie编写";
@@ -14,13 +14,19 @@ const CHECKIN_API_URL = "https://portal-api.lisk.com/graphql";
 function loadConfig() {
   try {
     // 读取私钥文件
-    const privateKeys = fs.existsSync('./address.txt') 
-      ? fs.readFileSync('./address.txt', 'utf8').split('\n').filter(line => line.trim())
+    const privateKeys = fs.existsSync("./address.txt")
+      ? fs
+          .readFileSync("./address.txt", "utf8")
+          .split("\n")
+          .filter((line) => line.trim())
       : [];
-    
+
     // 读取代理文件
-    const proxies = fs.existsSync('./proxy.txt')
-      ? fs.readFileSync('./proxy.txt', 'utf8').split('\n').filter(line => line.trim())
+    const proxies = fs.existsSync("./proxy.txt")
+      ? fs
+          .readFileSync("./proxy.txt", "utf8")
+          .split("\n")
+          .filter((line) => line.trim())
       : [];
 
     if (privateKeys.length === 0) {
@@ -30,7 +36,7 @@ function loadConfig() {
     // 将私钥和代理组合成配置对象数组
     return privateKeys.map((pk, index) => ({
       privateKey: pk.trim(),
-      proxy: proxies[index]?.trim() || null // 如果没有对应代理则为null
+      proxy: proxies[index]?.trim() || null, // 如果没有对应代理则为null
     }));
   } catch (error) {
     console.error(kleur.red("读取配置文件错误:"), error);
@@ -47,18 +53,18 @@ async function createFetchRequest(url, options, proxy) {
   // 使用代理发送请求
   return fetch(url, {
     ...options,
-    proxy: proxy // 格式: "http://ip:port" 或 "http://username:password@ip:port"
+    proxy: proxy, // 格式: "http://ip:port" 或 "http://username:password@ip:port"
   });
 }
 
 // 检查是否已经在今天执行过签到
 function hasCheckedInToday() {
   try {
-    const logFile = './checkin_log.txt';
+    const logFile = "./checkin_log.txt";
     if (!fs.existsSync(logFile)) return false;
-    
-    const lastCheckin = fs.readFileSync(logFile, 'utf8');
-    const today = new Date().toISOString().split('T')[0];
+
+    const lastCheckin = fs.readFileSync(logFile, "utf8");
+    const today = new Date().toISOString().split("T")[0];
     return lastCheckin.includes(today);
   } catch (error) {
     return false;
@@ -67,8 +73,8 @@ function hasCheckedInToday() {
 
 // 记录签到日期
 function logCheckinDate() {
-  const logFile = './checkin_log.txt';
-  const date = new Date().toISOString().split('T')[0];
+  const logFile = "./checkin_log.txt";
+  const date = new Date().toISOString().split("T")[0];
   fs.appendFileSync(logFile, `${date}\n`);
 }
 
@@ -80,13 +86,15 @@ async function dailyCheckin() {
   }
 
   const web3 = new Web3(RPC_URL);
-  
-  const accounts = configs.map(config => {
-    const account = web3.eth.accounts.privateKeyToAccount("0x" + config.privateKey);
+
+  const accounts = configs.map((config) => {
+    const account = web3.eth.accounts.privateKeyToAccount(
+      "0x" + config.privateKey
+    );
     web3.eth.accounts.wallet.add(account);
     return {
       account,
-      proxy: config.proxy
+      proxy: config.proxy,
     };
   });
 
@@ -131,10 +139,12 @@ async function dailyCheckin() {
           }
 
           const data = await response.json();
-          
+
           console.log(
             kleur.green(`账户 ${account.address} 签到成功`) +
-            (proxy ? kleur.blue(` (使用代理: ${proxy})`) : kleur.blue(" (直连)"))
+              (proxy
+                ? kleur.blue(` (使用代理: ${proxy})`)
+                : kleur.blue(" (直连)"))
           );
           return response;
         } catch (accountError) {
@@ -161,7 +171,7 @@ async function dailyCheckin() {
 // 主函数
 async function main() {
   console.log(kleur.blue("签到程序已启动，等待执行..."));
-  
+
   // 检查是否需要立即执行一次
   if (!hasCheckedInToday()) {
     console.log(kleur.yellow("执行首次签到..."));
@@ -186,12 +196,12 @@ async function main() {
 }
 
 // 添加优雅退出处理
-process.on('SIGINT', () => {
-  console.log(kleur.yellow('\n正在退出程序...'));
+process.on("SIGINT", () => {
+  console.log(kleur.yellow("\n正在退出程序..."));
   process.exit();
 });
 
 // 运行主函数
-main().catch(error => {
+main().catch((error) => {
   console.error(kleur.red("程序运行错误: "), error);
 });
